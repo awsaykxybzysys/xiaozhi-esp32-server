@@ -1,6 +1,7 @@
 """
-公司行政制度查询工具
-使用FastGPT API实现流式查询公司行政制度，如报销、出差等制度
+电力交易数据查询工具
+支持电力交易数据查询，市场交易规则查询等
+包括：日前预测电价、实时预测电价、气象数据、电源出力、统调负荷等
 """
 
 import asyncio
@@ -13,80 +14,72 @@ TAG = __name__
 logger = setup_logging()
 
 # 流式工具函数描述
-COMPANY_POLICY_QUERY_FUNCTION_DESC = {
+POWER_DATA_QUERY_FUNCTION_DESC = {
     "type": "function",
     "function": {
-        "name": "company_policy_query",
+        "name": "power_data_query",
         "description": (
-            "图迹科技公司介绍，以及行政制度查询工具，可以实时查询公司简介和各项行政制度和政策。"
-            "支持查询报销制度、出差制度、请假制度、考勤制度等。"
+            "电力交易数据查询工具，支持查询电力市场相关数据和交易规则。"
+            "包括：日前预测电价、实时预测电价、气象数据（温度、风速、湿度等）、"
+            "A类电源出力、B类电源出力、统调负荷等电力交易相关数据。"
             "使用流式输出，实时返回查询结果。"
         ),
         "parameters": {
             "type": "object",
             "properties": {
-                "policy_type": {
+                "data_type": {
                     "type": "string",
-                    "description": "制度类型，如：报销、出差、请假、考勤、福利、培训、晋升等",
-                    "enum": ["报销", "出差", "请假", "考勤", "福利", "培训", "晋升", "其他"]
+                    "description": "数据类型，如：日前预测电价、实时预测电价、气象数据、A类电源出力、B类电源出力、统调负荷、市场规则等",
+                    "enum": [
+                        "日前预测电价", "实时预测电价", "气象数据", "A类电源出力", 
+                        "B类电源出力", "统调负荷", "市场规则", "交易数据", "其他"
+                    ]
                 },
                 "query": {
                     "type": "string",
-                    "description": "具体查询内容或问题，如：'出差报销标准'、'请假流程'、'考勤规定'等",
+                    "description": "具体查询内容或问题，如：'明天的日前预测电价'、'今日实时电价'、'当前温度'、'A类电源出力情况'等",
                 },
                 "timeout": {
                     "type": "integer",
                     "description": "超时时间（秒），默认60秒",
                 }
             },
-            "required": ["policy_type", "query"],
+            "required": ["data_type", "query"],
         },
     },
 }
 
 
-@register_function("company_policy_query", COMPANY_POLICY_QUERY_FUNCTION_DESC, ToolType.STREAM_OUTPUT)
-async def company_policy_query(conn, policy_type: str, query: str, timeout: int = 60, stream_callback=None):
+@register_function("power_data_query", POWER_DATA_QUERY_FUNCTION_DESC, ToolType.STREAM_OUTPUT)
+async def power_data_query(conn, data_type: str, query: str, timeout: int = 60, stream_callback=None):
     """
-    公司行政制度查询函数
+    电力交易数据查询函数
     
     Args:
         conn: 连接对象
-        policy_type: 制度类型
+        data_type: 数据类型
         query: 具体查询内容
         timeout: 超时时间
         stream_callback: 流式回调函数
     """
     try:
-        # 从配置获取FastGPT API地址和密钥
-        api_base_url = conn.config["plugins"]["company_policy_query"].get(
-            "api_url", "https://cloud.fastgpt.cn/api"
-        )
-        api_key = conn.config["plugins"]["company_policy_query"].get(
-            "api_key", "fastgpt-fiLsgV0lDKUGVdAK80XPXWWlEniQHo8tpbPklKDNqdbzGlMJxAWQxj"
+        # 从配置获取API地址，如果没有配置则使用默认地址
+        api_base_url = conn.config["plugins"]["power_data_query"].get(
+            "api_url", "http://1.95.88.210:8888"
         )
         
         # 构建完整的API地址
-        api_url = f"{api_base_url}/v1/chat/completions"
+        api_url = f"{api_base_url}/v1/chat/mcp"
         
-        logger.bind(tag=TAG).info(f"开始查询公司制度: {policy_type} - {query}, API: {api_url}")
+        logger.bind(tag=TAG).info(f"开始查询电力数据: {data_type} - {query}, API: {api_url}")
         
-        # 构建请求数据
-        request_data = {
-            "chatId": f"policy_query_{int(asyncio.get_event_loop().time())}",
-            "stream": True,
-            "detail": False,
-            "messages": [
-                {
-                    "role": "user", 
-                    "content": f"请详细介绍公司的{policy_type}制度，包括相关流程、标准和要求。用户具体问题是：{query}"
-                }
-            ]
+        # 构建请求参数
+        params = {
+            "qa": query
         }
         
         # 构建请求头
         headers = {
-            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
             "Accept": "text/event-stream",
             "Cache-Control": "no-cache"
@@ -94,22 +87,26 @@ async def company_policy_query(conn, policy_type: str, query: str, timeout: int 
         
         # 使用aiohttp进行异步HTTP请求
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout)) as session:
-            async with session.post(
+            async with session.get(
                 api_url,
                 headers=headers,
-                json=request_data
+                params=params
             ) as response:
                 
                 if response.status != 200:
                     error_text = await response.text()
-                    error_msg = f"FastGPT API请求失败，状态码: {response.status}, 响应: {error_text}"
+                    error_msg = f"电力数据API请求失败，状态码: {response.status}, 响应: {error_text}"
                     logger.bind(tag=TAG).error(error_msg)
                     return ActionResponse(Action.ERROR, response=error_msg)
                 
-                # 流式读取数据
+                # 流式读取数据 - 优化版本，减少卡顿
                 chunk_count = 0
                 content_chunk_count = 0  # 内容块计数器
                 full_content = ""
+                content_buffer = ""  # 内容缓冲区，用于合并小片段
+                last_send_time = 0  # 上次发送时间
+                min_send_interval = 0.5  # 最小发送间隔（秒）
+                min_content_length = 10  # 最小内容长度
                 
                 try:
                     async for line in response.content:
@@ -130,6 +127,16 @@ async def company_policy_query(conn, policy_type: str, query: str, timeout: int 
                                     # 检查是否是结束信号
                                     if data_str == '[DONE]':
                                         logger.bind(tag=TAG).info("接收到结束信号")
+                                        # 发送缓冲区中剩余的内容
+                                        if content_buffer and stream_callback:
+                                            await stream_callback({
+                                                "message": content_buffer,
+                                                "data_type": data_type,
+                                                "query": query,
+                                                "timestamp": int(asyncio.get_event_loop().time()),
+                                                "chunk_id": content_chunk_count + 1,
+                                                "is_final": True
+                                            })
                                         break
                                         
                                     # 解析JSON数据
@@ -144,27 +151,47 @@ async def company_policy_query(conn, policy_type: str, query: str, timeout: int 
                                                 if content:
                                                     content_chunk_count += 1
                                                     full_content += content
+                                                    content_buffer += content
                                                     
-                                                    # 检查内容长度和特征，避免发送过长的内容块
-                                                    if len(content) > 500 or (len(content) > 200 and '\n###' in content):  # 如果单个内容块过长或包含完整结构，跳过流式发送
-                                                        has_structure = '\n###' in content
-                                                        logger.bind(tag=TAG).warning(f"跳过过长的内容块，长度: {len(content)}, 包含完整结构: {has_structure}")
-                                                        continue
+                                                    # 检查是否应该发送缓冲区内容
+                                                    current_time = asyncio.get_event_loop().time()
+                                                    should_send = (
+                                                        len(content_buffer) >= min_content_length and
+                                                        (current_time - last_send_time) >= min_send_interval
+                                                    ) or len(content_buffer) > 100  # 或者缓冲区过长
                                                     
-                                                    # 发送流式内容 - 使用message字段，与故事工具保持一致
-                                                    if stream_callback:
+                                                    if should_send and stream_callback:
+                                                        # 检查内容长度和特征，避免发送过长的内容块
+                                                        if len(content_buffer) > 500 or (len(content_buffer) > 200 and '\n###' in content_buffer):
+                                                            has_structure = '\n###' in content_buffer
+                                                            logger.bind(tag=TAG).warning(f"跳过过长的内容块，长度: {len(content_buffer)}, 包含完整结构: {has_structure}")
+                                                            content_buffer = ""  # 清空缓冲区
+                                                            continue
+                                                        
                                                         await stream_callback({
-                                                            "message": content,  # 使用message字段，与故事工具一致
-                                                            "policy_type": policy_type,
+                                                            "message": content_buffer,
+                                                            "data_type": data_type,
                                                             "query": query,
-                                                            "timestamp": int(asyncio.get_event_loop().time()),
+                                                            "timestamp": int(current_time),
                                                             "chunk_id": content_chunk_count
                                                         })
+                                                        content_buffer = ""  # 清空缓冲区
+                                                        last_send_time = current_time
                                         
                                         # 检查是否是结束消息
                                         if data.get("choices") and len(data["choices"]) > 0:
                                             choice = data["choices"][0]
                                             if choice.get("finish_reason") == "stop":
+                                                # 发送缓冲区中剩余的内容
+                                                if content_buffer and stream_callback:
+                                                    await stream_callback({
+                                                        "message": content_buffer,
+                                                        "data_type": data_type,
+                                                        "query": query,
+                                                        "timestamp": int(asyncio.get_event_loop().time()),
+                                                        "chunk_id": content_chunk_count + 1,
+                                                        "is_final": True
+                                                    })
                                                 logger.bind(tag=TAG).info(f"流式传输完成，共处理 {chunk_count} 个数据块，{content_chunk_count} 个内容块")
                                                 break
                                             
@@ -180,8 +207,8 @@ async def company_policy_query(conn, policy_type: str, query: str, timeout: int 
                                                 
                                             content_chunk_count += 1
                                             await stream_callback({
-                                                "message": data_str,  # 使用message字段，与故事工具一致
-                                                "policy_type": policy_type,
+                                                "message": data_str,
+                                                "data_type": data_type,
                                                 "query": query,
                                                 "timestamp": int(asyncio.get_event_loop().time()),
                                                 "chunk_id": content_chunk_count
@@ -197,8 +224,8 @@ async def company_policy_query(conn, policy_type: str, query: str, timeout: int 
                                             
                                         content_chunk_count += 1
                                         await stream_callback({
-                                            "message": line_str,  # 使用message字段，与故事工具一致
-                                            "policy_type": policy_type,
+                                            "message": line_str,
+                                            "data_type": data_type,
                                             "query": query,
                                             "timestamp": int(asyncio.get_event_loop().time()),
                                             "chunk_id": content_chunk_count
@@ -221,13 +248,15 @@ async def company_policy_query(conn, policy_type: str, query: str, timeout: int 
                     # 尝试非流式请求作为备选
                     try:
                         logger.bind(tag=TAG).info("尝试非流式请求作为备选")
-                        non_stream_data = request_data.copy()
-                        non_stream_data["stream"] = False
                         
-                        async with session.post(
+                        # 修改请求头为非流式
+                        fallback_headers = headers.copy()
+                        fallback_headers["Accept"] = "application/json"
+                        
+                        async with session.get(
                             api_url,
-                            headers=headers,
-                            json=non_stream_data
+                            headers=fallback_headers,
+                            params=params
                         ) as fallback_response:
                             
                             if fallback_response.status == 200:
@@ -246,8 +275,8 @@ async def company_policy_query(conn, policy_type: str, query: str, timeout: int 
                                         else:
                                             if stream_callback:
                                                 await stream_callback({
-                                                    "message": content,  # 使用message字段，与故事工具一致
-                                                    "policy_type": policy_type,
+                                                    "message": content,  # 使用message字段，与其他工具一致
+                                                    "data_type": data_type,
                                                     "query": query,
                                                     "timestamp": int(asyncio.get_event_loop().time()),
                                                     "type": "fallback_response"
@@ -259,16 +288,15 @@ async def company_policy_query(conn, policy_type: str, query: str, timeout: int 
                     except Exception as e2:
                         logger.bind(tag=TAG).error(f"备选请求也失败: {e2}")
                 
-                # 返回成功结果，包含完整的查询内容
-                final_result = full_content if full_content else f"关于{policy_type}制度的查询已完成。"
-                logger.bind(tag=TAG).info(f"返回查询结果，内容长度: {len(final_result)} 字符")
+                # 返回成功结果，不包含完整内容，避免重复播放
+                logger.bind(tag=TAG).info(f"流式查询完成，共处理 {content_chunk_count} 个内容块")
                 return ActionResponse(
                     Action.STREAM_RESPONSE, 
-                    result=final_result
+                    result=f"关于{query}数据的查询已完成。"
                 )
                 
     except asyncio.TimeoutError:
-        error_msg = f"制度查询超时（{timeout}秒）"
+        error_msg = f"电力数据查询超时（{timeout}秒）"
         logger.bind(tag=TAG).error(error_msg)
         return ActionResponse(Action.ERROR, response=error_msg)
         
@@ -278,6 +306,6 @@ async def company_policy_query(conn, policy_type: str, query: str, timeout: int 
         return ActionResponse(Action.ERROR, response=error_msg)
         
     except Exception as e:
-        error_msg = f"制度查询执行错误: {str(e)}"
+        error_msg = f"电力数据查询执行错误: {str(e)}"
         logger.bind(tag=TAG).error(error_msg)
         return ActionResponse(Action.ERROR, response=error_msg)
