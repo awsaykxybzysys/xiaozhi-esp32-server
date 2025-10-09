@@ -1,0 +1,63 @@
+启动前：
+0.获取root权限
+sudo su -
+输入密码
+titan
+
+逐步启动以下服务
+1.启动jar包
+cd /disk8/wangjie/java/
+nohup java -jar xiaozhi-esp32-api.jar > output.log 2>&1 &
+2.启动web-nginx
+2.1查询状态  systemctl status nginx
+2.2启动  systemctl status nginx
+2.3重载配置文件 sudo systemctl reload nginx
+2.4重启  sudo systemctl restart nginx
+3.启动服务端
+conda activate xiaozhi-esp32-server
+cd /disk8/wangjie/server/xiaozhi-server/
+python app.py
+nohup python app.py > output.log 2>&1 &
+4.启动mcp
+conda activate mcp-endpoint-server
+cd /disk8/wangjie/mcp/mcp-endpoint-server/
+设置环境变量
+export MCP_ENDPOINT=ws://113.140.12.194:18014/mcp_endpoint/mcp/?token=zQiTr7wTO5lB1%2BZhBM2dEox3KMyeynf7g0pdvCEOhi18KwSWKfrLpMJlsdIzC%2BV1
+python main.py
+nohup python main.py > output.log 2>&1 &
+5.启动gptSoVits
+conda activate GPTSoVits
+cd /disk8/wangjie/GPTSoVITS/GPT-SoVITS-v2pro-20250604/
+python api_v2.py -a 127.0.0.1 -p 9880 -c GPT_SoVITS/configs/tts_infer.yaml
+nohup python api_v2.py -a 127.0.0.1 -p 9880 -c GPT_SoVITS/configs/tts_infer.yaml > output.log 2>&1 &
+
+
+6.启动ssemcp
+python simple_sse_calculator.py --host 0.0.0.0 --port 8006
+7.启动mcp中间服务
+python mcp_pipe.py sse_calculator_config.yaml
+
+
+
+nginx 安装目录
+etc/nginx
+htpp  ota需要修改esp32配置
+Component config
+  └── LWIP
+      └── TCP
+          ├── TCP receive mailbox size (设置为32)
+          ├── TCP send buffer size (设置为65535)
+          ├── TCP window size (设置为65535)
+          └── TCP/IP task stack size (设置为4096)
+		  
+		  
+以下目前没有用		  
+Component config → ESP32-specific → WiFi
+├── WiFi task stack size (建议设置为4096)
+└── WiFi RX callback task stack size (建议设置为2048)
+Component config → HTTP Server
+├── HTTP Server task stack size (建议设置为4096)
+└── HTTP Server task priority (建议设置为5)
+
+
+ota在线管理上传失败，修改nginx允许上传的大小为100M
