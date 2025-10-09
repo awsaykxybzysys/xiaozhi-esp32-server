@@ -17,7 +17,6 @@ import { useMessage } from 'wot-design-uni'
 import useZPaging from 'z-paging/components/z-paging/js/hooks/useZPaging.js'
 import { createAgent, deleteAgent, getAgentList } from '@/api/agent/agent'
 import { toast } from '@/utils/toast'
-import { t } from '@/i18n'
 
 defineOptions({
   name: 'Home',
@@ -79,11 +78,11 @@ async function handleCreateAgent(agentName: string) {
     await createAgent({ agentName: agentName.trim() })
     // 创建成功后刷新列表
     pagingRef.value.reload()
-    toast.success(`${t('home.agentName')}"${agentName}"${t('message.saveSuccess')}`)
+    toast.success(`智能体"${agentName}"创建成功！`)
   }
   catch (error: any) {
     console.error('创建智能体失败:', error)
-    const errorMessage = error?.message || t('message.saveFail')
+    const errorMessage = error?.message || '创建失败，请重试'
     toast.error(errorMessage)
   }
 }
@@ -94,11 +93,11 @@ async function handleDeleteAgent(agent: Agent) {
     await deleteAgent(agent.id)
     // 删除成功后刷新列表
     pagingRef.value.reload()
-    toast.success(`${t('home.agentName')}${t('message.deleteSuccess')}`)
+    toast.success(`智能体"${agent.agentName}"已删除`)
   }
   catch (error: any) {
     console.error('删除智能体失败:', error)
-    const errorMessage = error?.message || t('message.deleteFail')
+    const errorMessage = error?.message || '删除失败，请重试'
     toast.error(errorMessage)
   }
 }
@@ -120,14 +119,13 @@ function handleCardClick(agent: Agent) {
 function openCreateDialog() {
   message
     .prompt({
-      title: t('home.dialogTitle'),
+      title: '创建智能体',
       msg: '',
-      inputPlaceholder: t('home.inputPlaceholder'),
+      inputPlaceholder: '例如：客服助手、语音助理、知识问答',
       inputValue: '',
       inputPattern: /^[\u4E00-\u9FA5a-z0-9\s]{1,50}$/i,
-      inputError: t('home.createError'),
-      confirmButtonText: t('home.createNow'),
-      cancelButtonText: t('common.cancel'),
+      confirmButtonText: '立即创建',
+      cancelButtonText: '取消',
     })
     .then(async (result: any) => {
       if (result.value && String(result.value).trim()) {
@@ -146,12 +144,12 @@ function formatTime(timeStr: string) {
   const diff = now.getTime() - date.getTime()
 
   if (diff < 60000)
-    return t('home.justNow')
+    return '刚刚'
   if (diff < 3600000)
-    return `${Math.floor(diff / 60000)}${t('home.minutesAgo')}`
+    return `${Math.floor(diff / 60000)}分钟前`
   if (diff < 86400000)
-    return `${Math.floor(diff / 3600000)}${t('home.hoursAgo')}`
-  return `${Math.floor(diff / 86400000)}${t('home.daysAgo')}`
+    return `${Math.floor(diff / 3600000)}小时前`
+  return `${Math.floor(diff / 86400000)}天前`
 }
 
 // 页面显示时刷新列表
@@ -161,20 +159,12 @@ onShow(() => {
     pagingRef.value.reload()
   }
 })
-
-// 在组件挂载后设置导航栏标题
-import { onMounted } from 'vue'
-onMounted(() => {
-  uni.setNavigationBarTitle({
-    title: t('home.pageTitle')
-  })
-})
 </script>
 
 <template>
   <z-paging
     ref="pagingRef" v-model="agentList" :refresher-enabled="true" :auto-show-back-to-top="true"
-    :loading-more-enabled="false" :show-loading-more="false" :hide-empty-view="false" :empty-view-text="t('home.emptyState')"
+    :loading-more-enabled="false" :show-loading-more="false" :hide-empty-view="false" empty-view-text="暂无智能体"
     empty-view-img="" :refresher-threshold="80" :back-to-top-style="{
       backgroundColor: '#fff',
       borderRadius: '50%',
@@ -188,12 +178,15 @@ onMounted(() => {
         <view class="banner-content">
           <view class="welcome-info">
             <text class="greeting">
-              {{ t('home.greeting') }}
+              你好，小智
             </text>
             <text class="subtitle">
-              {{ t('home.subtitle') }} <text class="highlight">
-                {{ t('home.wonderfulDay') }}
+              让我们度过 <text class="highlight">
+                美好的一天！
               </text>
+            </text>
+            <text class="english-subtitle">
+              Hello, Let's have a wonderful day!
             </text>
           </view>
           <view class="wave-decoration">
@@ -234,13 +227,13 @@ onMounted(() => {
                   <view class="stat-chip">
                     <wd-icon name="phone" custom-class="chip-icon" />
                     <text class="chip-text">
-                      {{ t('home.deviceManagement') }}({{ agent.deviceCount }})
+                      设备管理({{ agent.deviceCount }})
                     </text>
                   </view>
                   <view v-if="agent.lastConnectedAt" class="stat-chip">
                     <wd-icon name="time" custom-class="chip-icon" />
                     <text class="chip-text">
-                      {{ t('home.lastConversation') }}{{ formatTime(agent.lastConnectedAt) }}
+                      最近对话：{{ formatTime(agent.lastConnectedAt) }}
                     </text>
                   </view>
                 </view>
@@ -254,7 +247,7 @@ onMounted(() => {
             <view class="swipe-actions">
               <view class="action-btn delete-btn" @click.stop="handleDeleteAgent(agent)">
                 <wd-icon name="delete" />
-                <text>{{ t('home.delete') }}</text>
+                <text>删除</text>
               </view>
             </view>
           </template>
@@ -267,10 +260,10 @@ onMounted(() => {
       <view class="empty-state">
         <wd-icon name="robot" custom-class="empty-icon" />
         <text class="empty-text">
-          {{ t('home.emptyState') }}
+          暂无智能体
         </text>
         <text class="empty-desc">
-          {{ t('home.createFirstAgent') }}
+          点击右下角 + 号创建您的第一个智能体
         </text>
       </view>
     </template>

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useToast } from 'wot-design-uni'
-import { t } from '@/i18n'
 
 // 类型定义
 interface WiFiNetwork {
@@ -45,7 +44,7 @@ async function checkESP32Connection() {
     return response.statusCode === 200
   }
   catch (error) {
-    console.log(t('deviceConfig.esp32ConnectionCheckFailed') + ':', error)
+    console.log('ESP32连接检查失败:', error)
     return false
   }
 }
@@ -58,12 +57,12 @@ async function submitConfig() {
   // 检查ESP32连接
   const connected = await checkESP32Connection()
   if (!connected) {
-      toast.error(t('deviceConfig.connectXiaozhiHotspot'))
-      return
-    }
+    toast.error('请先连接xiaozhi热点')
+    return
+  }
 
   configuring.value = true
-    console.log(t('deviceConfig.startWifiConfig') + ':', props.selectedNetwork.ssid)
+  console.log('开始WiFi配网:', props.selectedNetwork.ssid)
 
   try {
     const response = await uni.request({
@@ -82,16 +81,16 @@ async function submitConfig() {
     console.log('WiFi配网响应:', response)
 
     if (response.statusCode === 200 && (response.data as any)?.success) {
-      toast.success(`${t('deviceConfig.configSuccess')}！${t('deviceConfig.deviceWillConnectTo')} ${props.selectedNetwork.ssid}，${t('deviceConfig.deviceWillRestart')}。${t('deviceConfig.pleaseDisconnectXiaozhiHotspot')}`)
+      toast.success(`配网成功！设备将连接到 ${props.selectedNetwork.ssid}，设备会自动重启。请断开xiaozhi热点连接。`)
     }
     else {
-      const errorMsg = (response.data as any)?.error || t('deviceConfig.configFailed')
+      const errorMsg = (response.data as any)?.error || '配网失败'
       toast.error(errorMsg)
     }
   }
   catch (error) {
-    console.error(t('deviceConfig.wifiConfigFailed') + ':', error)
-      toast.error(`${t('deviceConfig.configFailed')}，${t('deviceConfig.pleaseCheckNetworkConnection')}`)
+    console.error('WiFi配网失败:', error)
+    toast.error('配网失败，请检查网络连接')
   }
   finally {
     configuring.value = false
@@ -105,14 +104,14 @@ async function submitConfig() {
     <view v-if="props.selectedNetwork" class="selected-network">
       <view class="network-info">
         <view class="network-name">
-          {{ t('deviceConfig.selectedNetwork') }}: {{ props.selectedNetwork.ssid }}
+          选中网络: {{ props.selectedNetwork.ssid }}
         </view>
         <view class="network-details">
           <text class="network-signal">
-            {{ t('deviceConfig.signal') }}: {{ props.selectedNetwork.rssi }}dBm
+            信号: {{ props.selectedNetwork.rssi }}dBm
           </text>
           <text class="network-security">
-            {{ props.selectedNetwork.authmode === 0 ? t('deviceConfig.openNetwork') : t('deviceConfig.encryptedNetwork') }}
+            {{ props.selectedNetwork.authmode === 0 ? '开放网络' : '加密网络' }}
           </text>
         </view>
       </view>
@@ -128,30 +127,30 @@ async function submitConfig() {
         :disabled="!canSubmit"
         @click="submitConfig"
       >
-        {{ configuring ? t('deviceConfig.configuring') : t('deviceConfig.startWifiConfigButton') }}
+        {{ configuring ? '配网中...' : '开始WiFi配网' }}
       </wd-button>
     </view>
 
     <!-- 使用说明 -->
     <view class="help-section">
-        <view class="help-title">
-          {{ t('deviceConfig.wifiConfigInstructions') }}
-        </view>
+      <view class="help-title">
+        WiFi配网说明
+      </view>
       <view class="help-content">
         <text class="help-item">
-          1. {{ t('deviceConfig.phoneConnectXiaozhiHotspot') }} (xiaozhi-XXXXXX)
+          1. 手机连接xiaozhi热点 (xiaozhi-XXXXXX)
         </text>
         <text class="help-item">
-          2. {{ t('deviceConfig.selectTargetWifiNetwork') }}
+          2. 选择要配网的目标WiFi网络
         </text>
         <text class="help-item">
-          3. {{ t('deviceConfig.enterWifiPasswordIfNeeded') }}
+          3. 输入WiFi密码（如果需要）
         </text>
         <text class="help-item">
-          4. {{ t('deviceConfig.clickStartConfigAndWait') }}
+          4. 点击开始配网，等待设备连接
         </text>
         <text class="help-tip">
-          {{ t('deviceConfig.afterConfigSuccessDeviceWillRestart') }}
+          配网成功后设备会自动重启并连接目标WiFi
         </text>
       </view>
     </view>

@@ -97,7 +97,7 @@ export default {
             }).send()
     },
     // 修改
-    updateParam(data, callback, failCallback) {
+    updateParam(data, callback) {
         RequestService.sendRequest()
             .url(`${getServiceUrl()}/admin/params`)
             .method('PUT')
@@ -105,10 +105,6 @@ export default {
             .success((res) => {
                 RequestService.clearRequestTime()
                 callback(res)
-            })
-            .fail((err) => {
-                RequestService.clearRequestTime()
-                failCallback(err)
             })
             .networkFail((err) => {
                 console.error('更新参数失败:', err)

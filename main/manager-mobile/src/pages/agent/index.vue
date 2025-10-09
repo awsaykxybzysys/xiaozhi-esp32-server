@@ -11,7 +11,6 @@
 <script lang="ts" setup>
 import { onLoad } from '@dcloudio/uni-app'
 import { computed, onMounted, ref } from 'vue'
-import { t } from '@/i18n'
 import CustomTabs from '@/components/custom-tabs/index.vue'
 import ChatHistory from '@/pages/chat-history/index.vue'
 import DeviceManagement from '@/pages/device/index.vue'
@@ -43,6 +42,7 @@ systemInfo = uni.getSystemInfoSync()
 safeAreaInsets = systemInfo.safeAreaInsets
 // #endif
 
+
 // 智能体ID
 const currentAgentId = ref('default')
 
@@ -65,25 +65,25 @@ const voiceprintRef = ref()
 // Tab 配置
 const tabList = [
   {
-    label: t('agent.roleConfig'),
+    label: '角色配置',
     value: 'agent-config',
     icon: '/static/tabbar/robot.png',
     activeIcon: '/static/tabbar/robot_activate.png',
   },
   {
-    label: t('agent.deviceManagement'),
+    label: '设备管理',
     value: 'device-management',
     icon: '/static/tabbar/device.png',
     activeIcon: '/static/tabbar/device_activate.png',
   },
   {
-    label: t('agent.chatHistory'),
+    label: '聊天记录',
     value: 'chat-history',
     icon: '/static/tabbar/chat.png',
     activeIcon: '/static/tabbar/chat_activate.png',
   },
   {
-    label: t('agent.voiceprintManagement'),
+    label: '声纹管理',
     value: 'voiceprint-management',
     icon: '/static/tabbar/microphone.png',
     activeIcon: '/static/tabbar/microphone_activate.png',
@@ -160,7 +160,7 @@ onMounted(async () => {
 <template>
   <view class="h-screen flex flex-col bg-[#f5f7fb]">
     <!-- 导航栏 -->
-    <wd-navbar :title="t('agent.pageTitle')" safe-area-inset-top>
+    <wd-navbar title="智能体" safe-area-inset-top>
       <template #left>
         <wd-icon name="arrow-left" size="18" @click="goBack" />
       </template>

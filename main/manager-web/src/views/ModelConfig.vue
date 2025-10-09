@@ -3,19 +3,13 @@
     <HeaderBar />
 
     <div class="operation-bar">
-      <h2 class="page-title">{{ $t("modelConfig." + activeTab) }}</h2>
+      <h2 class="page-title">{{ modelTypeText }}</h2>
       <div class="action-group">
         <div class="search-group">
-          <el-input
-            :placeholder="$t('modelConfig.searchPlaceholder')"
-            v-model="search"
-            class="search-input"
-            clearable
-            @keyup.enter.native="handleSearch"
-            style="width: 240px"
-          />
+          <el-input placeholder="请输入模型名称查询" v-model="search" class="search-input" clearable
+            @keyup.enter.native="handleSearch" style="width: 240px" />
           <el-button class="btn-search" @click="handleSearch">
-            {{ $t("modelConfig.search") }}
+            搜索
           </el-button>
         </div>
       </div>
@@ -25,140 +19,76 @@
     <div class="main-wrapper">
       <div class="content-panel">
         <!-- 左侧导航 -->
-        <el-menu
-          :default-active="activeTab"
-          class="nav-panel"
-          @select="handleMenuSelect"
-          style="background-size: cover; background-position: center"
-        >
+        <el-menu :default-active="activeTab" class="nav-panel" @select="handleMenuSelect"
+          style="background-size: cover; background-position: center;">
           <el-menu-item index="vad">
-            <span class="menu-text">{{ $t("modelConfig.vad") }}</span>
+            <span class="menu-text">语言活动检测</span>
           </el-menu-item>
           <el-menu-item index="asr">
-            <span class="menu-text">{{ $t("modelConfig.asr") }}</span>
+            <span class="menu-text">语音识别</span>
           </el-menu-item>
           <el-menu-item index="llm">
-            <span class="menu-text">{{ $t("modelConfig.llm") }}</span>
+            <span class="menu-text">大语言模型</span>
           </el-menu-item>
           <el-menu-item index="vllm">
-            <span class="menu-text">{{ $t("modelConfig.vllm") }}</span>
+            <span class="menu-text">视觉大模型</span>
           </el-menu-item>
           <el-menu-item index="intent">
-            <span class="menu-text">{{ $t("modelConfig.intent") }}</span>
+            <span class="menu-text">意图识别</span>
           </el-menu-item>
           <el-menu-item index="tts">
-            <span class="menu-text">{{ $t("modelConfig.tts") }}</span>
+            <span class="menu-text">语音合成</span>
           </el-menu-item>
           <el-menu-item index="memory">
-            <span class="menu-text">{{ $t("modelConfig.memory") }}</span>
+            <span class="menu-text">记忆</span>
           </el-menu-item>
         </el-menu>
 
         <!-- 右侧内容 -->
         <div class="content-area">
           <el-card class="model-card" shadow="never">
-            <el-table
-              ref="modelTable"
-              style="width: 100%"
-              v-loading="loading"
-              :element-loading-text="$t('modelConfig.loading')"
-              element-loading-spinner="el-icon-loading"
-              element-loading-background="rgba(255, 255, 255, 0.7)"
-              :header-cell-style="{ background: 'transparent' }"
-              :data="modelList"
-              class="data-table"
-              header-row-class-name="table-header"
-              :header-cell-class-name="headerCellClassName"
-              @selection-change="handleSelectionChange"
-            >
-              <el-table-column
-                type="selection"
-                width="55"
-                align="center"
-                :cell-class-name="selectionCellClassName"
-              ></el-table-column>
-              <el-table-column
-                :label="$t('modelConfig.modelId')"
-                prop="id"
-                align="center"
-              ></el-table-column>
-              <el-table-column
-                :label="$t('modelConfig.modelName')"
-                prop="modelName"
-                align="center"
-              ></el-table-column>
-              <el-table-column :label="$t('modelConfig.provider')" align="center">
+            <el-table ref="modelTable" style="width: 100%" v-loading="loading" element-loading-text="拼命加载中"
+              element-loading-spinner="el-icon-loading" element-loading-background="rgba(255, 255, 255, 0.7)"
+              :header-cell-style="{ background: 'transparent' }" :data="modelList" class="data-table"
+              header-row-class-name="table-header" :header-cell-class-name="headerCellClassName"
+              @selection-change="handleSelectionChange">
+              <el-table-column type="selection" width="55" align="center"></el-table-column>
+              <el-table-column label="模型ID" prop="id" align="center"></el-table-column>
+              <el-table-column label="模型名称" prop="modelName" align="center"></el-table-column>
+              <el-table-column label="提供商" align="center">
                 <template slot-scope="scope">
-                  {{ scope.row.configJson.type || $t("modelConfig.unknown") }}
+                  {{ scope.row.configJson.type || '未知' }}
                 </template>
               </el-table-column>
-              <el-table-column :label="$t('modelConfig.isEnabled')" align="center">
+              <el-table-column label="是否启用" align="center">
                 <template slot-scope="scope">
-                  <el-switch
-                    v-model="scope.row.isEnabled"
-                    class="custom-switch"
-                    :active-value="1"
-                    :inactive-value="0"
-                    @change="handleStatusChange(scope.row)"
-                  />
+                  <el-switch v-model="scope.row.isEnabled" class="custom-switch" :active-value="1" :inactive-value="0"
+                    @change="handleStatusChange(scope.row)" />
                 </template>
               </el-table-column>
-              <el-table-column :label="$t('modelConfig.isDefault')" align="center">
+              <el-table-column label="是否默认" align="center">
                 <template slot-scope="scope">
-                  <el-switch
-                    v-model="scope.row.isDefault"
-                    class="custom-switch"
-                    :active-value="1"
-                    :inactive-value="0"
-                    @change="handleDefaultChange(scope.row)"
-                  />
+                  <el-switch v-model="scope.row.isDefault" class="custom-switch" :active-value="1" :inactive-value="0"
+                    @change="handleDefaultChange(scope.row)" />
                 </template>
               </el-table-column>
-              <el-table-column
-                v-if="activeTab === 'tts'"
-                :label="$t('modelConfig.voiceManagement')"
-                align="center"
-              >
+              <el-table-column v-if="activeTab === 'tts'" label="音色管理" align="center">
                 <template slot-scope="scope">
-                  <el-button
-                    type="text"
-                    size="mini"
-                    @click="openTtsDialog(scope.row)"
-                    class="voice-management-btn"
-                  >
-                    {{ $t("modelConfig.voiceManagement") }}
+                  <el-button type="text" size="mini" @click="openTtsDialog(scope.row)" class="voice-management-btn">
+                    音色管理
                   </el-button>
                 </template>
               </el-table-column>
-              <el-table-column
-                :label="$t('modelConfig.action')"
-                align="center"
-                width="210px"
-              >
+              <el-table-column label="操作" align="center" width="180px">
                 <template slot-scope="scope">
-                  <el-button
-                    type="text"
-                    size="mini"
-                    @click="editModel(scope.row)"
-                    class="edit-btn"
-                  >
-                    {{ $t("modelConfig.edit") }}
+                  <el-button type="text" size="mini" @click="editModel(scope.row)" class="edit-btn">
+                    修改
                   </el-button>
-                  <el-button
-                    type="text"
-                    size="mini"
-                    @click="duplicateModel(scope.row)"
-                    class="edit-btn"
-                  >
-                    {{ $t("modelConfig.duplicate") }}
+                  <el-button type="text" size="mini" @click="duplicateModel(scope.row)" class="edit-btn">
+                    创建副本
                   </el-button>
-                  <el-button
-                    type="text"
-                    size="mini"
-                    @click="deleteModel(scope.row)"
-                    class="delete-btn"
-                  >
-                    {{ $t("modelConfig.delete") }}
+                  <el-button type="text" size="mini" @click="deleteModel(scope.row)" class="delete-btn">
+                    删除
                   </el-button>
                 </template>
               </el-table-column>
@@ -166,96 +96,43 @@
             <div class="table-footer">
               <div class="batch-actions">
                 <el-button size="mini" type="primary" @click="selectAll">
-                  {{
-                    isAllSelected
-                      ? $t("modelConfig.deselectAll")
-                      : $t("modelConfig.selectAll")
-                  }}
+                  {{ isAllSelected ?
+                    '取消全选' : '全选' }}
                 </el-button>
                 <el-button type="success" size="mini" @click="addModel" class="add-btn">
-                  {{ $t("modelConfig.add") }}
+                  新增
                 </el-button>
-                <el-button
-                  size="mini"
-                  type="danger"
-                  icon="el-icon-delete"
-                  @click="batchDelete"
-                >
-                  {{ $t("modelConfig.delete") }}
+                <el-button size="mini" type="danger" icon="el-icon-delete" @click="batchDelete">
+                  删除
                 </el-button>
               </div>
               <div class="custom-pagination">
-                <el-select
-                  v-model="pageSize"
-                  @change="handlePageSizeChange"
-                  class="page-size-select"
-                >
-                  <el-option
-                    v-for="item in pageSizeOptions"
-                    :key="item"
-                    :label="$t('modelConfig.itemsPerPage', { items: item })"
-                    :value="item"
-                  >
+
+                <el-select v-model="pageSize" @change="handlePageSizeChange" class="page-size-select">
+                  <el-option v-for="item in pageSizeOptions" :key="item" :label="`${item}条/页`" :value="item">
                   </el-option>
                 </el-select>
 
-                <button
-                  class="pagination-btn"
-                  :disabled="currentPage === 1"
-                  @click="goFirst"
-                >
-                  {{ $t("modelConfig.firstPage") }}
-                </button>
-                <button
-                  class="pagination-btn"
-                  :disabled="currentPage === 1"
-                  @click="goPrev"
-                >
-                  {{ $t("modelConfig.prevPage") }}
-                </button>
+                <button class="pagination-btn" :disabled="currentPage === 1" @click="goFirst">首页</button>
+                <button class="pagination-btn" :disabled="currentPage === 1" @click="goPrev">上一页</button>
 
-                <button
-                  v-for="page in visiblePages"
-                  :key="page"
-                  class="pagination-btn"
-                  :class="{ active: page === currentPage }"
-                  @click="goToPage(page)"
-                >
+                <button v-for="page in visiblePages" :key="page" class="pagination-btn"
+                  :class="{ active: page === currentPage }" @click="goToPage(page)">
                   {{ page }}
                 </button>
 
-                <button
-                  class="pagination-btn"
-                  :disabled="currentPage === pageCount"
-                  @click="goNext"
-                >
-                  {{ $t("modelConfig.nextPage") }}
-                </button>
-                <span class="total-text">{{
-                  $t("modelConfig.totalRecords", { total })
-                }}</span>
+                <button class="pagination-btn" :disabled="currentPage === pageCount" @click="goNext">下一页</button>
+                <span class="total-text">共{{ total }}条记录</span>
               </div>
             </div>
           </el-card>
         </div>
       </div>
 
-      <ModelEditDialog
-        :modelType="activeTab"
-        :visible.sync="editDialogVisible"
-        :modelData="editModelData"
-        @save="handleModelSave"
-      />
-      <TtsModel
-        :visible.sync="ttsDialogVisible"
-        :ttsModelId="selectedTtsModelId"
-        :modelConfig="selectedModelConfig"
-      />
-      <AddModelDialog
-        :modelType="activeTab"
-        :visible.sync="addDialogVisible"
-        @confirm="handleAddConfirm"
-      />
+      <ModelEditDialog :modelType="activeTab" :visible.sync="editDialogVisible" :modelData="editModelData"
+        @save="handleModelSave" />
+      <TtsModel :visible.sync="ttsDialogVisible" :ttsModelId="selectedTtsModelId" :modelConfig="selectedModelConfig" />
+      <AddModelDialog :modelType="activeTab" :visible.sync="addDialogVisible" @confirm="handleAddConfirm" />
     </div>
     <el-footer>
       <version-footer />
@@ -275,12 +152,12 @@ export default {
   data() {
     return {
       addDialogVisible: false,
-      activeTab: "llm",
-      search: "",
+      activeTab: 'llm',
+      search: '',
       editDialogVisible: false,
       editModelData: {},
       ttsDialogVisible: false,
-      selectedTtsModelId: "",
+      selectedTtsModelId: '',
       modelList: [],
       pageSizeOptions: [10, 20, 50, 100],
       currentPage: 1,
@@ -289,7 +166,7 @@ export default {
       selectedModels: [],
       isAllSelected: false,
       loading: false,
-      selectedModelConfig: {},
+      selectedModelConfig: {}
     };
   },
 
@@ -297,23 +174,18 @@ export default {
     this.loadData();
   },
 
-  mounted() {
-    // 在组件挂载后确保表头翻译文本正确显示
-    setTimeout(() => {
-      this.updateSelectionHeaderText();
-    }, 100);
-  },
-
-  updated() {
-    // 在组件更新后重新设置表头翻译文本
-    this.updateSelectionHeaderText();
-  },
-
   computed: {
     modelTypeText() {
-      return (
-        this.$t("modelConfig." + this.activeTab) || this.$t("modelConfig.modelConfig")
-      );
+      const map = {
+        vad: '语言活动检测模型(VAD)',
+        asr: '语音识别模型(ASR)',
+        llm: '大语言模型（LLM）',
+        vllm: '视觉大模型（VLLM）',
+        intent: '意图识别模型(Intent)',
+        tts: '语音合成模型(TTS)',
+        memory: '记忆模型(Memory)'
+      }
+      return map[this.activeTab] || '模型配置'
     },
     pageCount() {
       return Math.ceil(this.total / this.pageSize);
@@ -332,17 +204,10 @@ export default {
         pages.push(i);
       }
       return pages;
-    },
+    }
   },
 
   methods: {
-    // 更新选择列表头翻译文本
-    updateSelectionHeaderText() {
-      const thElement = document.querySelector(`.el-table__header th:nth-child(1) .cell`);
-      if (thElement) {
-        thElement.setAttribute("data-content", this.$t("modelConfig.select"));
-      }
-    },
     handlePageSizeChange(val) {
       this.pageSize = val;
       this.currentPage = 1;
@@ -355,29 +220,14 @@ export default {
     },
     headerCellClassName({ column, columnIndex }) {
       if (columnIndex === 0) {
-        return "custom-selection-header";
+        return 'custom-selection-header';
       }
-      return "";
-    },
-    selectionCellClassName({ row, column, rowIndex, columnIndex }) {
-      // 只对表头行设置data-content
-      if (rowIndex === undefined) {
-        // 使用setTimeout确保DOM已经渲染完成
-        setTimeout(() => {
-          const thElement = document.querySelector(
-            `.el-table__header th:nth-child(1) .cell`
-          );
-          if (thElement) {
-            thElement.setAttribute("data-content", this.$t("modelConfig.select"));
-          }
-        }, 0);
-      }
-      return "";
+      return '';
     },
     handleMenuSelect(index) {
       this.activeTab = index;
-      this.currentPage = 1; // 重置到第一页
-      this.pageSize = 10; // 可选：重置每页条数
+      this.currentPage = 1;  // 重置到第一页
+      this.pageSize = 10;     // 可选：重置每页条数
       this.loadData();
     },
     handleSearch() {
@@ -387,41 +237,41 @@ export default {
     // 批量删除
     batchDelete() {
       if (this.selectedModels.length === 0) {
-        this.$message.warning(this.$t("modelConfig.selectModelsFirst"));
-        return;
+        this.$message.warning('请先选择要删除的模型')
+        return
       }
 
-      this.$confirm(this.$t("modelConfig.confirmBatchDelete"), this.$t("message.info"), {
-        confirmButtonText: this.$t("common.confirm"),
-        cancelButtonText: this.$t("common.cancel"),
-        type: "warning",
-      })
-        .then(() => {
-          const deletePromises = this.selectedModels.map(
-            (model) =>
-              new Promise((resolve) => {
-                Api.model.deleteModel(model.id, ({ data }) => resolve(data.code === 0));
-              })
-          );
+      this.$confirm('确定要删除选中的模型吗?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        const deletePromises = this.selectedModels.map(model =>
+          new Promise(resolve => {
+            Api.model.deleteModel(
+              model.id,
+              ({ data }) => resolve(data.code === 0)
+            )
+          })
+        )
 
-          Promise.all(deletePromises).then((results) => {
-            if (results.every(Boolean)) {
-              this.$message.success({
-                message: this.$t("modelConfig.batchDeleteSuccess"),
-                showClose: true,
-              });
-              this.loadData();
-            } else {
-              this.$message.error({
-                message: this.$t("modelConfig.partialDeleteFailed"),
-                showClose: true,
-              });
-            }
-          });
+        Promise.all(deletePromises).then(results => {
+          if (results.every(Boolean)) {
+            this.$message.success({
+              message: '批量删除成功',
+              showClose: true
+            })
+            this.loadData()
+          } else {
+            this.$message.error({
+              message: '部分删除失败',
+              showClose: true
+            })
+          }
         })
-        .catch(() => {
-          this.$message.info(this.$t("modelConfig.deleteCancelled"));
-        });
+      }).catch(() => {
+        this.$message.info('已取消删除')
+      })
     },
     addModel() {
       this.addDialogVisible = true;
@@ -437,30 +287,31 @@ export default {
     },
     // 删除单个模型
     deleteModel(model) {
-      this.$confirm(this.$t("modelConfig.confirmDelete"), this.$t("message.info"), {
-        confirmButtonText: this.$t("common.confirm"),
-        cancelButtonText: this.$t("common.cancel"),
-        type: "warning",
-      })
-        .then(() => {
-          Api.model.deleteModel(model.id, ({ data }) => {
+      this.$confirm('确定要删除该模型吗?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        Api.model.deleteModel(
+          model.id,
+          ({ data }) => {
             if (data.code === 0) {
               this.$message.success({
-                message: this.$t("modelConfig.deleteSuccess"),
-                showClose: true,
-              });
-              this.loadData();
+                message: '删除成功',
+                showClose: true
+              })
+              this.loadData()
             } else {
               this.$message.error({
-                message: data.msg || this.$t("modelConfig.deleteFailed"),
-                showClose: true,
-              });
+                message: data.msg || '删除失败',
+                showClose: true
+              })
             }
-          });
-        })
-        .catch(() => {
-          this.$message.info(this.$t("modelConfig.deleteCancelled"));
-        });
+          }
+        )
+      }).catch(() => {
+        this.$message.info('已取消删除')
+      })
     },
     handleCurrentChange(page) {
       this.currentPage = page;
@@ -471,27 +322,32 @@ export default {
       const id = formData.id;
 
       if (this.editModelData.duplicateMode) {
-        Api.model.addModel({ modelType, provideCode, formData }, ({ data }) => {
+        Api.model.addModel({modelType, provideCode, formData},
+        ({ data }) => {
           if (data.code === 0) {
-            this.$message.success(this.$t("modelConfig.duplicateSuccess"));
+            this.$message.success('创建副本成功');
             this.loadData();
             this.editDialogVisible = false;
           } else {
-            this.$message.error(data.msg || this.$t("modelConfig.duplicateFailed"));
+            this.$message.error(data.msg || '创建副本失败');
           }
           done && done(); // 调用done回调关闭加载状态
-        });
-      } else {
-        Api.model.updateModel({ modelType, provideCode, id, formData }, ({ data }) => {
-          if (data.code === 0) {
-            this.$message.success(this.$t("modelConfig.saveSuccess"));
-            this.loadData();
-            this.editDialogVisible = false;
-          } else {
-            this.$message.error(data.msg || this.$t("modelConfig.saveFailed"));
+        })
+      }
+      else {
+        Api.model.updateModel(
+          { modelType, provideCode, id, formData },
+          ({ data }) => {
+            if (data.code === 0) {
+              this.$message.success('保存成功');
+              this.loadData();
+              this.editDialogVisible = false;
+            } else {
+              this.$message.error(data.msg || '保存失败');
+            }
+            done && done(); // 调用done回调关闭加载状态
           }
-          done && done(); // 调用done回调关闭加载状态
-        });
+        );
       }
     },
     selectAll() {
@@ -518,21 +374,21 @@ export default {
           ...newModel,
           isDefault: newModel.isDefault ? 1 : 0,
           isEnabled: newModel.isEnabled ? 1 : 0,
-          configJson: newModel.configJson,
-        },
+          configJson: newModel.configJson
+        }
       };
 
       Api.model.addModel(params, ({ data }) => {
         if (data.code === 0) {
           this.$message.success({
-            message: this.$t("modelConfig.addSuccess"),
-            showClose: true,
+            message: '新增成功',
+            showClose: true
           });
           this.loadData();
         } else {
           this.$message.error({
-            message: data.msg || this.$t("modelConfig.addFailed"),
-            showClose: true,
+            message: data.msg || '新增失败',
+            showClose: true
           });
         }
       });
@@ -567,7 +423,7 @@ export default {
         modelType: this.activeTab,
         modelName: this.search,
         page: this.currentPage,
-        limit: this.pageSize,
+        limit: this.pageSize
       };
 
       Api.model.getModelList(params, ({ data }) => {
@@ -576,43 +432,41 @@ export default {
           this.modelList = data.data.list;
           this.total = data.data.total;
         } else {
-          this.$message.error(data.msg || this.$t("modelConfig.fetchModelsFailed"));
+          this.$message.error(data.msg || '获取模型列表失败');
         }
       });
     },
     // 处理启用/禁用状态变更
     handleStatusChange(model) {
-      const newStatus = model.isEnabled ? 1 : 0;
-      const originalStatus = model.isEnabled;
+      const newStatus = model.isEnabled ? 1 : 0
+      const originalStatus = model.isEnabled
 
-      model.isEnabled = !model.isEnabled;
+      model.isEnabled = !model.isEnabled
 
-      Api.model.updateModelStatus(model.id, newStatus, ({ data }) => {
-        if (data.code === 0) {
-          this.$message.success(
-            newStatus === 1
-              ? this.$t("modelConfig.enableSuccess")
-              : this.$t("modelConfig.disableSuccess")
-          );
-          // 保持新状态
-          model.isEnabled = newStatus;
-          // 刷新表格数据
-          this.loadData();
-        } else {
-          // 操作失败时恢复原状态
-          model.isEnabled = originalStatus;
-          this.$message.error(data.msg || this.$t("modelConfig.operationFailed"));
+      Api.model.updateModelStatus(
+        model.id,
+        newStatus,
+        ({ data }) => {
+          if (data.code === 0) {
+            this.$message.success(newStatus === 1 ? '启用成功' : '禁用成功')
+            // 保持新状态
+            model.isEnabled = newStatus
+          } else {
+            // 操作失败时恢复原状态
+            model.isEnabled = originalStatus
+            this.$message.error(data.msg || '操作失败')
+          }
         }
-      });
+      )
     },
     handleDefaultChange(model) {
       Api.model.setDefaultModel(model.id, ({ data }) => {
         if (data.code === 0) {
-          this.$message.success(this.$t("modelConfig.setDefaultSuccess"));
-          this.loadData();
+          this.$message.success('设置默认模型成功')
+          this.loadData()
         }
-      });
-    },
+      })
+    }
   },
 };
 </script>
@@ -676,12 +530,11 @@ export default {
   min-width: 242px;
   height: 100%;
   border-right: 1px solid #ebeef5;
-  background: linear-gradient(
-      120deg,
+  background:
+    linear-gradient(120deg,
       rgba(107, 140, 255, 0.3) 0%,
       rgba(169, 102, 255, 0.3) 25%,
-      transparent 60%
-    ),
+      transparent 60%),
     url("../assets/model/model.png") no-repeat center / cover;
   padding: 16px 0;
   flex-shrink: 0;
@@ -710,7 +563,7 @@ export default {
 }
 
 .nav-panel .el-menu-item.is-active::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 15px;
   top: 50%;
@@ -769,7 +622,7 @@ export default {
 
 ::v-deep .search-input .el-input__inner {
   border-radius: 4px;
-  border: 1px solid #dcdfe6;
+  border: 1px solid #DCDFE6;
   background-color: white;
   transition: border-color 0.2s;
 }
@@ -889,13 +742,13 @@ export default {
 }
 
 .batch-actions .el-button:first-child {
-  background: linear-gradient(135deg, #409eff, #6b8cff);
+  background: linear-gradient(135deg, #409EFF, #6B8CFF);
   border: none;
   color: white;
 }
 
 .batch-actions .el-button:first-child:hover {
-  background: linear-gradient(135deg, #3a8ee6, #5a7cff);
+  background: linear-gradient(135deg, #3A8EE6, #5A7CFF);
 }
 
 .el-table th /deep/ .el-table__cell {
@@ -911,27 +764,13 @@ export default {
 }
 
 ::v-deep .el-table .custom-selection-header .cell::before {
-  content: attr(data-content);
+  content: '选择';
   display: block;
   text-align: center;
-  line-height: 32px;
-  /* 设置合适的行高，确保文本完整显示 */
+  line-height: 0;
   color: black;
-  margin-top: 0;
-  /* 移除可能导致偏移的上边距 */
-  height: 32px;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 100%;
+  margin-top: 23px;
 }
-
-.custom-selection-header .cell {
-  position: relative;
-}
-
-/* 已移除可能影响文本显示的空伪元素 */
 
 ::v-deep .el-table__body .el-checkbox__inner {
   display: inline-block !important;
@@ -947,6 +786,7 @@ export default {
 }
 
 ::v-deep .data-table {
+
   &.el-table::before,
   &.el-table::after,
   &.el-table__inner-wrapper::before {
@@ -1030,7 +870,7 @@ export default {
     padding: 0 12px;
     border-radius: 4px;
     border: 1px solid #e4e7ed;
-    background: #dee7ff;
+    background: #DEE7FF;
     color: #606266;
     font-size: 14px;
     cursor: pointer;

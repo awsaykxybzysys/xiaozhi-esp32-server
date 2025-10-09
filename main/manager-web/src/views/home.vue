@@ -8,17 +8,20 @@
         <div class="add-device">
           <div class="add-device-bg">
             <div class="hellow-text" style="margin-top: 30px;">
-              {{ $t('home.greeting') }}
+              你好，图小记
             </div>
             <div class="hellow-text">
-              {{ $t('home.wish') }}
+              让我们度过
+              <div style="display: inline-block;color: #5778FF;">
+                美好的一天！
+              </div>
             </div>
             <div class="hi-hint">
-              let's have a wonderful day!
+              Hello, Let's have a wonderful day!
             </div>
             <div class="add-device-btn">
               <div class="left-add" @click="showAddDialog">
-                {{ $t('home.addAgent') }}
+                添加智能体
               </div>
               <div style="width: 23px;height: 13px;background: #5778ff;margin-left: -10px;" />
               <div class="right-add">
@@ -149,21 +152,21 @@ export default {
     },
     // 删除智能体
     handleDeleteAgent(agentId) {
-      this.$confirm(this.$t('home.confirmDeleteAgent'), '提示', {
-        confirmButtonText: this.$t('button.ok'),
-        cancelButtonText: this.$t('button.cancel'),
+      this.$confirm('确定要删除该智能体吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
         Api.agent.deleteAgent(agentId, (res) => {
           if (res.data.code === 0) {
             this.$message.success({
-              message: this.$t('home.deleteSuccess'),
+              message: '删除成功',
               showClose: true
             });
             this.fetchAgentList(); // 刷新列表
           } else {
             this.$message.error({
-              message: res.data.msg || this.$t('home.deleteFailed'),
+              message: res.data.msg || '删除失败',
               showClose: true
             });
           }

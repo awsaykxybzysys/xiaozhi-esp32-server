@@ -16,6 +16,7 @@ class ToolType(Enum):
     )
     IOT_CTL = (5, "IOT设备控制，需要传递conn参数")
     MCP_CLIENT = (6, "MCP客户端")
+    STREAM_OUTPUT = (18, "调用工具后，持续等待工具的流式输出")
 
     def __init__(self, code, message):
         self.code = code
@@ -28,6 +29,7 @@ class Action(Enum):
     NONE = (1, "啥也不干")
     RESPONSE = (2, "直接回复")
     REQLLM = (3, "调用函数后再请求llm生成回复")
+    STREAM_RESPONSE = (4, "流式响应，持续输出数据片段")
 
     def __init__(self, code, message):
         self.code = code
@@ -35,10 +37,11 @@ class Action(Enum):
 
 
 class ActionResponse:
-    def __init__(self, action: Action, result=None, response=None):
+    def __init__(self, action: Action, result=None, response=None, stream_callback=None):
         self.action = action  # 动作类型
         self.result = result  # 动作产生的结果
         self.response = response  # 直接回复的内容
+        self.stream_callback = stream_callback  # 流式回调函数
 
 
 class FunctionItem:

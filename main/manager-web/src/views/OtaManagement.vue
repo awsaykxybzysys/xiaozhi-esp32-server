@@ -3,11 +3,11 @@
         <HeaderBar />
 
         <div class="operation-bar">
-            <h2 class="page-title">{{ $t('otaManagement.firmwareManagement') }}</h2>
+            <h2 class="page-title">固件管理</h2>
             <div class="right-operations">
-                <el-input :placeholder="$t('otaManagement.searchPlaceholder')" v-model="searchName" class="search-input"
+                <el-input placeholder="请输入固件名称查询" v-model="searchName" class="search-input"
                     @keyup.enter.native="handleSearch" clearable />
-                <el-button class="btn-search" @click="handleSearch">{{ $t('otaManagement.search') }}</el-button>
+                <el-button class="btn-search" @click="handleSearch">搜索</el-button>
             </div>
         </div>
 
@@ -16,44 +16,44 @@
                 <div class="content-area">
                     <el-card class="params-card" shadow="never">
                         <el-table ref="paramsTable" :data="paramsList" class="transparent-table" v-loading="loading"
-                            element-loading-text="Loading" element-loading-spinner="el-icon-loading"
+                            element-loading-text="拼命加载中" element-loading-spinner="el-icon-loading"
                             element-loading-background="rgba(255, 255, 255, 0.7)"
                             :header-cell-class-name="headerCellClassName">
-                            <el-table-column :label="$t('modelConfig.select')" align="center" width="120">
+                            <el-table-column label="选择" align="center" width="120">
                                 <template slot-scope="scope">
                                     <el-checkbox v-model="scope.row.selected"></el-checkbox>
                                 </template>
                             </el-table-column>
-                            <el-table-column :label="$t('otaManagement.firmwareName')" prop="firmwareName" align="center"></el-table-column>
-                            <el-table-column :label="$t('otaManagement.firmwareType')" prop="type" align="center">
+                            <el-table-column label="固件名称" prop="firmwareName" align="center"></el-table-column>
+                            <el-table-column label="固件类型" prop="type" align="center">
                                 <template slot-scope="scope">
                                     {{ getFirmwareTypeName(scope.row.type) }}
                                 </template>
                             </el-table-column>
-                            <el-table-column :label="$t('otaManagement.version')" prop="version" align="center"></el-table-column>
-                            <el-table-column :label="$t('otaManagement.fileSize')" prop="size" align="center">
+                            <el-table-column label="版本号" prop="version" align="center"></el-table-column>
+                            <el-table-column label="文件大小" prop="size" align="center">
                                 <template slot-scope="scope">
                                     {{ formatFileSize(scope.row.size) }}
                                 </template>
                             </el-table-column>
-                            <el-table-column :label="$t('otaManagement.remark')" prop="remark" align="center"
+                            <el-table-column label="备注" prop="remark" align="center"
                                 show-overflow-tooltip></el-table-column>
-                            <el-table-column :label="$t('otaManagement.createTime')" prop="createDate" align="center">
+                            <el-table-column label="创建时间" prop="createDate" align="center">
                                 <template slot-scope="scope">
                                     {{ formatDate(scope.row.createDate) }}
                                 </template>
                             </el-table-column>
-                            <el-table-column :label="$t('otaManagement.updateTime')" prop="updateDate" align="center">
+                            <el-table-column label="更新时间" prop="updateDate" align="center">
                                 <template slot-scope="scope">
                                     {{ formatDate(scope.row.updateDate) }}
                                 </template>
                             </el-table-column>
-                            <el-table-column :label="$t('otaManagement.action')" align="center">
+                            <el-table-column label="操作" align="center">
                                 <template slot-scope="scope">
                                     <el-button size="mini" type="text"
-                                        @click="downloadFirmware(scope.row)">{{ $t('otaManagement.download') }}</el-button>
-                                    <el-button size="mini" type="text" @click="editParam(scope.row)">{{ $t('otaManagement.edit') }}</el-button>
-                                    <el-button size="mini" type="text" @click="deleteParam(scope.row)">{{ $t('otaManagement.delete') }}</el-button>
+                                        @click="downloadFirmware(scope.row)">下载</el-button>
+                                    <el-button size="mini" type="text" @click="editParam(scope.row)">编辑</el-button>
+                                    <el-button size="mini" type="text" @click="deleteParam(scope.row)">删除</el-button>
                                 </template>
                             </el-table-column>
                         </el-table>
@@ -61,33 +61,33 @@
                         <div class="table_bottom">
                             <div class="ctrl_btn">
                                 <el-button size="mini" type="primary" class="select-all-btn" @click="handleSelectAll">
-                                    {{ isAllSelected ? $t('otaManagement.deselectAll') : $t('otaManagement.selectAll') }}
+                                    {{ isAllSelected ? '取消全选' : '全选' }}
                                 </el-button>
                                 <el-button size="mini" type="success" @click="showAddDialog"
-                                    style="background: #5bc98c;border: None;">{{ $t('otaManagement.addNew') }}</el-button>
+                                    style="background: #5bc98c;border: None;">新增</el-button>
                                 <el-button size="mini" type="danger" icon="el-icon-delete"
-                                    @click="deleteSelectedParams">{{ $t('otaManagement.delete') }}</el-button>
+                                    @click="deleteSelectedParams">删除</el-button>
                             </div>
                             <div class="custom-pagination">
                                 <el-select v-model="pageSize" @change="handlePageSizeChange" class="page-size-select">
-                                    <el-option v-for="item in pageSizeOptions" :key="item" :label="$t('otaManagement.itemsPerPage', { items: item })"
+                                    <el-option v-for="item in pageSizeOptions" :key="item" :label="`${item}条/页`"
                                         :value="item">
                                     </el-option>
                                 </el-select>
                                 <button class="pagination-btn" :disabled="currentPage === 1" @click="goFirst">
-                                    {{ $t('otaManagement.firstPage') }}
+                                    首页
                                 </button>
                                 <button class="pagination-btn" :disabled="currentPage === 1" @click="goPrev">
-                                    {{ $t('otaManagement.prevPage') }}
+                                    上一页
                                 </button>
                                 <button v-for="page in visiblePages" :key="page" class="pagination-btn"
                                     :class="{ active: page === currentPage }" @click="goToPage(page)">
                                     {{ page }}
                                 </button>
                                 <button class="pagination-btn" :disabled="currentPage === pageCount" @click="goNext">
-                                    {{ $t('otaManagement.nextPage') }}
+                                    下一页
                                 </button>
-                                <span class="total-text">{{ $t('otaManagement.totalRecords', { total }) }}</span>
+                                <span class="total-text">共{{ total }}条记录</span>
                             </div>
                         </div>
                     </el-card>
@@ -97,7 +97,7 @@
 
         <!-- 新增/编辑固件对话框 -->
         <firmware-dialog :title="dialogTitle" :visible.sync="dialogVisible" :form="firmwareForm"
-                :firmware-types="firmwareTypes" @submit="handleSubmit" @cancel="dialogVisible = false" />
+            :firmware-types="firmwareTypes" @submit="handleSubmit" @cancel="dialogVisible = false" />
         <el-footer>
             <version-footer />
         </el-footer>
@@ -110,7 +110,6 @@ import FirmwareDialog from "@/components/FirmwareDialog.vue";
 import HeaderBar from "@/components/HeaderBar.vue";
 import VersionFooter from "@/components/VersionFooter.vue";
 import { formatDate, formatFileSize } from "@/utils/format";
-import i18n from '@/i18n';
 
 export default {
     components: { HeaderBar, FirmwareDialog, VersionFooter },
@@ -194,7 +193,7 @@ export default {
                     this.paramsList = [];
                     this.total = 0;
                     this.$message.error({
-                        message: res?.data?.msg || this.$t('otaManagement.getFirmwareListFailed'),
+                        message: res?.data?.msg || '获取固件列表失败',
                         showClose: true
                     });
                 }
@@ -211,7 +210,7 @@ export default {
             });
         },
         showAddDialog() {
-            this.dialogTitle = this.$t('otaManagement.addFirmware');
+            this.dialogTitle = "新增固件";
             // 完全重置表单数据
             this.firmwareForm = {
                 id: null,
@@ -231,7 +230,7 @@ export default {
             this.dialogVisible = true;
         },
         editParam(row) {
-            this.dialogTitle = this.$t('otaManagement.editFirmware');
+            this.dialogTitle = "编辑固件";
             this.firmwareForm = { ...row };
             this.dialogVisible = true;
         },
@@ -242,14 +241,14 @@ export default {
                     res = res.data;
                     if (res.code === 0) {
                         this.$message.success({
-                            message: this.$t('otaManagement.updateSuccess'),
+                            message: "修改成功",
                             showClose: true
                         });
                         this.dialogVisible = false;
                         this.fetchFirmwareList();
                     } else {
                         this.$message.error({
-                            message: res.msg || this.$t('otaManagement.updateFailed'),
+                            message: res.msg || "修改失败",
                             showClose: true
                         });
                     }
@@ -260,14 +259,14 @@ export default {
                     res = res.data;
                     if (res.code === 0) {
                         this.$message.success({
-                            message: this.$t('otaManagement.addSuccess'),
+                            message: "新增成功",
                             showClose: true
                         });
                         this.dialogVisible = false;
                         this.fetchFirmwareList();
                     } else {
                         this.$message.error({
-                            message: res.msg || this.$t('otaManagement.addFailed'),
+                            message: res.msg || "新增失败",
                             showClose: true
                         });
                     }
@@ -279,7 +278,7 @@ export default {
             const selectedRows = this.firmwareList.filter(row => row.selected);
             if (selectedRows.length === 0) {
                 this.$message.warning({
-                    message: this.$t('otaManagement.selectFirmwareFirst'),
+                    message: "请先选择需要删除的固件",
                     showClose: true
                 });
                 return;
@@ -292,23 +291,23 @@ export default {
 
             if (Array.isArray(row) && row.length === 0) {
                 this.$message.warning({
-                    message: this.$t('otaManagement.selectFirmwareFirst'),
+                    message: "请先选择需要删除的参数",
                     showClose: true
                 });
                 return;
             }
 
             const paramCount = params.length;
-            this.$confirm(this.$t('otaManagement.confirmBatchDelete', { paramCount }), 'Warning', {
-                confirmButtonText: 'OK',
-                cancelButtonText: 'Cancel',
+            this.$confirm(`确定要删除选中的${paramCount}个固件吗？`, '警告', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
                 type: 'warning',
                 distinguishCancelAndClose: true
             }).then(() => {
                 const ids = params.map(param => param.id);
                 if (ids.some(id => !id)) {
                     this.$message.error({
-                        message: this.$t('otaManagement.invalidFirmwareId'),
+                        message: '存在无效的参数ID',
                         showClose: true
                     });
                     return;
@@ -318,13 +317,13 @@ export default {
                     res = res.data;
                     if (res.code === 0) {
                         this.$message.success({
-                            message: this.$t('otaManagement.batchDeleteSuccess', { paramCount }),
+                            message: `成功删除${paramCount}个固件`,
                             showClose: true
                         });
                         this.fetchFirmwareList();
                     } else {
                         this.$message.error({
-                            message: res.msg || this.$t('otaManagement.deleteFailed'),
+                            message: res.msg || '删除失败，请重试',
                             showClose: true
                         });
                     }
@@ -333,13 +332,13 @@ export default {
                 if (action === 'cancel') {
                     this.$message({
                         type: 'info',
-                        message: this.$t('otaManagement.operationCancelled'),
+                        message: '已取消删除操作',
                         duration: 1000
                     });
                 } else {
                     this.$message({
                         type: 'info',
-                        message: this.$t('otaManagement.operationClosed'),
+                        message: '操作已关闭',
                         duration: 1000
                     });
                 }
@@ -373,7 +372,7 @@ export default {
         },
         downloadFirmware(firmware) {
             if (!firmware || !firmware.id) {
-                this.$message.error(this.$t('otaManagement.incompleteFirmwareInfo'));
+                this.$message.error('固件信息不完整');
                 return;
             }
             // 先获取下载链接
@@ -383,7 +382,7 @@ export default {
                     const baseUrl = process.env.VUE_APP_API_BASE_URL || '';
                     window.open(`${window.location.origin}${baseUrl}/otaMag/download/${uuid}`);
                 } else {
-                    this.$message.error(this.$t('otaManagement.getDownloadUrlFailed'));
+                    this.$message.error('获取下载链接失败');
                 }
             });
         },
@@ -395,7 +394,7 @@ export default {
                 this.firmwareTypes = res.data
             } catch (error) {
                 console.error('获取固件类型失败:', error)
-                this.$message.error(error.message || this.$t('otaManagement.getFirmwareTypesFailed'))
+                this.$message.error(error.message || '获取固件类型失败')
             }
         },
         getFirmwareTypeName(type) {

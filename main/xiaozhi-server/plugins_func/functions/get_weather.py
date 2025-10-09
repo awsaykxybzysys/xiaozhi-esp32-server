@@ -1,5 +1,5 @@
 import requests
-from bs4 import BeautifulSoup
+import json
 from config.logger import setup_logging
 from plugins_func.register import register_function, ToolType, ActionResponse, Action
 from core.utils.util import get_ip_info
@@ -12,16 +12,16 @@ GET_WEATHER_FUNCTION_DESC = {
     "function": {
         "name": "get_weather",
         "description": (
-            "获取某个地点的天气，用户应提供一个位置，比如用户说杭州天气，参数为：杭州。"
+            "获取某个地点的实时天气信息，用户应提供一个位置，比如用户说西安天气，参数为：西安。"
             "如果用户说的是省份，默认用省会城市。如果用户说的不是省份或城市而是一个地名，默认用该地所在省份的省会城市。"
-            "如果用户没有指明地点，说“天气怎么样”，”今天天气如何“，location参数为空"
+            "如果用户没有指明地点，说‘天气怎么样’，‘今天天气如何’，location参数为空"
         ),
         "parameters": {
             "type": "object",
             "properties": {
                 "location": {
                     "type": "string",
-                    "description": "地点名，例如杭州。可选参数，如果不提供则不传",
+                    "description": "地点名，例如西安。可选参数，如果不提供则不传",
                 },
                 "lang": {
                     "type": "string",
@@ -33,14 +33,7 @@ GET_WEATHER_FUNCTION_DESC = {
     },
 }
 
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36"
-    )
-}
-
-# 天气代码 https://dev.qweather.com/docs/resource/icons/#weather-icons
+# 天气代码映射表 - 基于和风天气API
 WEATHER_CODE_MAP = {
     "100": "晴",
     "101": "多云",
@@ -106,68 +99,172 @@ WEATHER_CODE_MAP = {
     "999": "未知",
 }
 
-
-def fetch_city_info(location, api_key, api_host):
-    url = f"https://{api_host}/geo/v2/city/lookup?key={api_key}&location={location}&lang=zh"
-    response = requests.get(url, headers=HEADERS).json()
-    if response.get("error") is not None:
-        logger.bind(tag=TAG).error(
-            f"获取天气失败，原因：{response.get('error', {}).get('detail')}"
-        )
-        return None
-    return response.get("location", [])[0] if response.get("location") else None
-
-
-def fetch_weather_page(url):
-    response = requests.get(url, headers=HEADERS)
-    return BeautifulSoup(response.text, "html.parser") if response.ok else None
-
-
-def parse_weather_info(soup):
-    city_name = soup.select_one("h1.c-submenu__location").get_text(strip=True)
-
-    current_abstract = soup.select_one(".c-city-weather-current .current-abstract")
-    current_abstract = (
-        current_abstract.get_text(strip=True) if current_abstract else "未知"
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36"
     )
+}
 
-    current_basic = {}
-    for item in soup.select(
-        ".c-city-weather-current .current-basic .current-basic___item"
-    ):
-        parts = item.get_text(strip=True, separator=" ").split(" ")
-        if len(parts) == 2:
-            key, value = parts[1], parts[0]
-            current_basic[key] = value
 
-    temps_list = []
-    for row in soup.select(".city-forecast-tabs__row")[:7]:  # 取前7天的数据
-        date = row.select_one(".date-bg .date").get_text(strip=True)
-        weather_code = (
-            row.select_one(".date-bg .icon")["src"].split("/")[-1].split(".")[0]
-        )
-        weather = WEATHER_CODE_MAP.get(weather_code, "未知")
-        temps = [span.get_text(strip=True) for span in row.select(".tmp-cont .temp")]
-        high_temp, low_temp = (temps[0], temps[-1]) if len(temps) >= 2 else (None, None)
-        temps_list.append((date, weather, high_temp, low_temp))
+def get_city_location_id(location, api_key, api_host):
+    """
+    根据城市名称获取LocationID
+    """
+    # 尝试不同的API地址格式
+    api_urls = [
+        f"https://{api_host}/v2/city/lookup",
+        f"https://{api_host}/geo/v2/city/lookup",  # 备用地址
+    ]
+    
+    params = {
+        "key": api_key,
+        "location": location,
+        "lang": "zh"
+    }
+    
+    for url in api_urls:
+        try:
+            logger.bind(tag=TAG).info(f"尝试API地址: {url}")
+            response = requests.get(url, params=params, headers=HEADERS, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            if data.get("code") == "200" and data.get("location"):
+                logger.bind(tag=TAG).info(f"成功获取城市ID: {data['location'][0]['id']}")
+                return data["location"][0]["id"]
+            else:
+                logger.bind(tag=TAG).warning(f"API返回错误: {data.get('code', 'unknown')} - {data.get('message', '')}")
+                
+        except requests.RequestException as e:
+            logger.bind(tag=TAG).warning(f"请求失败 {url}: {str(e)}")
+            continue
+    
+    logger.bind(tag=TAG).error(f"所有API地址都失败，无法获取城市ID: {location}")
+    return None
 
-    return city_name, current_abstract, current_basic, temps_list
+
+def get_current_weather(location_id, api_key, api_host, lang="zh"):
+    """
+    获取实时天气数据
+    """
+    # 尝试不同的API地址格式
+    api_urls = [
+        f"https://{api_host}/v7/weather/now",
+        f"https://{api_host}/weather/now",  # 备用地址
+    ]
+    
+    params = {
+        "key": api_key,
+        "location": location_id,
+        "lang": lang,
+        "unit": "m"  # 公制单位
+    }
+    
+    for url in api_urls:
+        try:
+            logger.bind(tag=TAG).info(f"尝试天气API地址: {url}")
+            response = requests.get(url, params=params, headers=HEADERS, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            if data.get("code") == "200":
+                logger.bind(tag=TAG).info("成功获取天气数据")
+                return data
+            else:
+                logger.bind(tag=TAG).warning(f"天气API返回错误: {data.get('code', 'unknown')} - {data.get('message', '')}")
+                
+        except requests.RequestException as e:
+            logger.bind(tag=TAG).warning(f"天气请求失败 {url}: {str(e)}")
+            continue
+    
+    logger.bind(tag=TAG).error(f"所有天气API地址都失败，无法获取天气数据")
+    return None
+
+
+def format_weather_report(weather_data, city_name):
+    """
+    格式化天气报告
+    """
+    if not weather_data or not weather_data.get("now"):
+        return "获取天气数据失败"
+    
+    now = weather_data["now"]
+    
+    # 获取天气描述
+    weather_text = now.get("text", "未知")
+    weather_icon = now.get("icon", "")
+    
+    # 构建天气报告
+    report = f" {city_name}\n\n"
+    report += f"当前天气: {weather_text}\n"
+    report += f"温度: {now.get('temp', 'N/A')}°C\n"
+    
+    # 风向风力
+    wind_dir = now.get("windDir", "")
+    wind_scale = now.get("windScale", "")
+    wind_speed = now.get("windSpeed", "")
+    if wind_dir and wind_scale:
+        report += f"风向风力: {wind_dir} {wind_scale}级\n"
+    
+    # 湿度
+    humidity = now.get("humidity", "")
+    if humidity:
+        report += f"相对湿度: {humidity}%\n"
+    
+    # 大气压强
+    pressure = now.get("pressure", "")
+    if pressure:
+        report += f"大气压强: {pressure}百帕\n"
+    
+    # 能见度
+    visibility = now.get("vis", "")
+    if visibility:
+        report += f"能见度: {visibility}公里\n"
+    
+    # 降水量
+    precip = now.get("precip", "")
+    if precip and float(precip) > 0:
+        report += f"过去1小时降水量: {precip}毫米\n"
+    
+    # 云量
+    cloud = now.get("cloud", "")
+    if cloud:
+        report += f"云量: {cloud}%\n"
+    
+    # 露点温度
+    dew = now.get("dew", "")
+    if dew:
+        report += f"露点温度: {dew}°C\n"
+    
+    # 数据更新时间
+    obs_time = now.get("obsTime", "")
+    if obs_time:
+        report += f"\n数据观测时间: {obs_time}"
+    
+    return report
 
 
 @register_function("get_weather", GET_WEATHER_FUNCTION_DESC, ToolType.SYSTEM_CTL)
 def get_weather(conn, location: str = None, lang: str = "zh_CN"):
+    """
+    获取天气信息的主函数
+    """
     from core.utils.cache.manager import cache_manager, CacheType
-
+    
+    # 获取配置
     api_host = conn.config["plugins"]["get_weather"].get(
-        "api_host", "mj7p3y7naa.re.qweatherapi.com"
+        "api_host", "devapi.qweather.com"
     )
     api_key = conn.config["plugins"]["get_weather"].get(
-        "api_key", "a861d0d5e7bf4ee1a83d9a9e4f96d4da"
+        "api_key", "537948a93841445ead850b2621ecf3df"
     )
-    default_location = conn.config["plugins"]["get_weather"]["default_location"]
+    default_location = conn.config["plugins"]["get_weather"].get(
+        "default_location", "北京"
+    )
     client_ip = conn.client_ip
-
-    # 优先使用用户提供的location参数
+    
+    # 确定查询位置
     if not location:
         # 通过客户端IP解析城市
         if client_ip:
@@ -181,47 +278,49 @@ def get_weather(conn, location: str = None, lang: str = "zh_CN"):
                 if ip_info:
                     cache_manager.set(CacheType.IP_INFO, client_ip, ip_info)
                     location = ip_info.get("city")
-
+            
             if not location:
                 location = default_location
         else:
             # 若无IP，使用默认位置
             location = default_location
-    # 尝试从缓存获取完整天气报告
-    weather_cache_key = f"full_weather_{location}_{lang}"
+    
+    # 设置语言代码
+    lang_code = "zh" if lang.startswith("zh") else "en"
+    
+    # 尝试从缓存获取天气报告
+    weather_cache_key = f"qweather_{location}_{lang_code}"
     cached_weather_report = cache_manager.get(CacheType.WEATHER, weather_cache_key)
     if cached_weather_report:
         return ActionResponse(Action.REQLLM, cached_weather_report, None)
-
-    # 缓存未命中，获取实时天气数据
-    city_info = fetch_city_info(location, api_key, api_host)
-    if not city_info:
+    
+    # 获取城市LocationID
+    location_id = get_city_location_id(location, api_key, api_host)
+    if not location_id:
         return ActionResponse(
-            Action.REQLLM, f"未找到相关的城市: {location}，请确认地点是否正确", None
+            Action.REQLLM, 
+            f"未找到城市 '{location}' 的信息，请确认地点名称是否正确", 
+            None
         )
-    soup = fetch_weather_page(city_info["fxLink"])
-    if not soup:
-        return ActionResponse(Action.REQLLM, None, "请求失败")
-    city_name, current_abstract, current_basic, temps_list = parse_weather_info(soup)
-
-    weather_report = f"您查询的位置是：{city_name}\n\n当前天气: {current_abstract}\n"
-
-    # 添加有效的当前天气参数
-    if current_basic:
-        weather_report += "详细参数：\n"
-        for key, value in current_basic.items():
-            if value != "0":  # 过滤无效值
-                weather_report += f"  · {key}: {value}\n"
-
-    # 添加7天预报
-    weather_report += "\n未来7天预报：\n"
-    for date, weather, high, low in temps_list:
-        weather_report += f"{date}: {weather}，气温 {low}~{high}\n"
-
-    # 提示语
-    weather_report += "\n（如需某一天的具体天气，请告诉我日期）"
-
-    # 缓存完整的天气报告
-    cache_manager.set(CacheType.WEATHER, weather_cache_key, weather_report)
-
+    
+    # 获取实时天气数据
+    weather_data = get_current_weather(location_id, api_key, api_host, lang_code)
+    if not weather_data:
+        return ActionResponse(
+            Action.REQLLM, 
+            "获取天气数据失败，请稍后重试", 
+            None
+        )
+    
+    # 获取城市名称（从API返回数据中提取）
+    city_name = location  # 使用用户输入的城市名
+    if weather_data.get("location"):
+        city_name = weather_data["location"].get("name", location)
+    
+    # 格式化天气报告
+    weather_report = format_weather_report(weather_data, city_name)
+    
+    # 缓存天气报告（缓存10分钟）
+    cache_manager.set(CacheType.WEATHER, weather_cache_key, weather_report, ttl=600)
+    
     return ActionResponse(Action.REQLLM, weather_report, None)

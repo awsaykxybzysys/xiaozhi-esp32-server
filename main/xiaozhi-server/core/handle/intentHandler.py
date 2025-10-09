@@ -1,12 +1,12 @@
 import json
-import uuid
 import asyncio
-from core.utils.dialogue import Message
-from core.providers.tts.dto.dto import ContentType
-from core.handle.helloHandle import checkWakeupWords
-from plugins_func.register import Action, ActionResponse
+import uuid
 from core.handle.sendAudioHandle import send_stt_message
+from core.handle.helloHandle import checkWakeupWords
 from core.utils.util import remove_punctuation_and_length
+from core.providers.tts.dto.dto import ContentType
+from core.utils.dialogue import Message
+from plugins_func.register import Action, ActionResponse
 from core.providers.tts.dto.dto import TTSMessageDTO, SentenceType
 
 TAG = __name__
@@ -24,10 +24,9 @@ async def handle_user_intent(conn, text):
         pass
 
     # 检查是否有明确的退出命令
-    _, filtered_text = remove_punctuation_and_length(text)
+    filtered_text = remove_punctuation_and_length(text)[1]
     if await check_direct_exit(conn, filtered_text):
         return True
-
     # 检查是否是唤醒词
     if await checkWakeupWords(conn, filtered_text):
         return True
@@ -91,30 +90,6 @@ async def process_intent_result(conn, intent_result, original_text):
             if function_name == "continue_chat":
                 return False
 
-            if function_name == "result_for_context":
-                await send_stt_message(conn, original_text)
-                conn.client_abort = False
-                
-                def process_context_result():
-                    conn.dialogue.put(Message(role="user", content=original_text))
-                    
-                    from core.utils.current_time import get_current_time_info
-
-                    current_time, today_date, today_weekday, lunar_date = get_current_time_info()
-                    
-                    # 构建带上下文的基础提示
-                    context_prompt = f"""当前时间：{current_time}
-                                        今天日期：{today_date} ({today_weekday})
-                                        今天农历：{lunar_date}
-
-                                        请根据以上信息回答用户的问题：{original_text}"""
-                    
-                    response = conn.intent.replyResult(context_prompt, original_text)
-                    speak_txt(conn, response)
-                
-                conn.executor.submit(process_context_result)
-                return True
-
             function_args = {}
             if "arguments" in intent_data["function_call"]:
                 function_args = intent_data["function_call"]["arguments"]
@@ -163,6 +138,10 @@ async def process_intent_result(conn, intent_result, original_text):
                         if llm_result is None:
                             llm_result = text
                         speak_txt(conn, llm_result)
+                    elif result.action == Action.STREAM_RESPONSE:  # 流式响应
+                        text = result.result if result.result else result.response
+                        if text is not None:
+                            speak_txt(conn, text)
                     elif (
                         result.action == Action.NOTFOUND
                         or result.action == Action.ERROR

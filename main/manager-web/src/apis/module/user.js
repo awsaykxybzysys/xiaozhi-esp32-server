@@ -154,7 +154,7 @@ export default {
             }).send()
     },
     // 获取公共配置
-    getPubConfig(callback, failCallback) {
+    getPubConfig(callback) {
         RequestService.sendRequest()
             .url(`${getServiceUrl()}/user/pub-config`)
             .method('GET')
@@ -162,16 +162,10 @@ export default {
                 RequestService.clearRequestTime();
                 callback(res);
             })
-            .fail((err) => {
-                RequestService.clearRequestTime();
-                if (failCallback) {
-                    failCallback(err);
-                }
-            })
             .networkFail((err) => {
                 console.error('获取公共配置失败:', err);
                 RequestService.reAjaxFun(() => {
-                    this.getPubConfig(callback, failCallback);
+                    this.getPubConfig(callback);
                 });
             }).send();
     },
@@ -183,8 +177,7 @@ export default {
             .data({
                 phone: passwordData.phone,
                 code: passwordData.code,
-                password: passwordData.password,
-                captchaId: passwordData.captchaId
+                password: passwordData.password
             })
             .success((res) => {
                 RequestService.clearRequestTime();
@@ -199,6 +192,5 @@ export default {
                     this.retrievePassword(passwordData, callback, failCallback);
                 });
             }).send()
-    },
-
+    }
 }

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { t } from '@/i18n'
 import UltrasonicConfig from './components/ultrasonic-config.vue'
 import WifiConfig from './components/wifi-config.vue'
 import WifiSelector from './components/wifi-selector.vue'
@@ -34,11 +33,11 @@ const selectedWifiInfo = ref<{
 // 配网模式选项
 const configTypeOptions = [
   {
-    name: t('deviceConfig.wifiConfig'),
+    name: 'WiFi配网',
     value: 'wifi' as const,
   },
   // {
-  //   name: t('deviceConfig.ultrasonicConfig'),
+  //   name: '超声波配网',
   //   value: 'ultrasonic' as const,
   // },
 ]
@@ -68,36 +67,28 @@ function onNetworkSelected(network: WiFiNetwork | null, password: string) {
 function onConnectionStatusChange(connected: boolean) {
   console.log('ESP32连接状态:', connected)
 }
-
-// 在组件挂载后设置导航栏标题
-import { onMounted } from 'vue'
-onMounted(() => {
-  uni.setNavigationBarTitle({
-    title: t('deviceConfig.pageTitle')
-  })
-})
 </script>
 
 <template>
   <view class="min-h-screen bg-[#f5f7fb]">
-    <wd-navbar :title="t('deviceConfig.pageTitle')" safe-area-inset-top />
+    <wd-navbar title="设备配网" safe-area-inset-top />
 
     <view class="box-border px-[20rpx]">
       <!-- 配网方式选择 -->
       <view class="pb-[20rpx] first:pt-[20rpx]">
         <text class="text-[32rpx] text-[#232338] font-bold">
-            {{ t('deviceConfig.configMethod') }}
-          </text>
+          配网方式
+        </text>
       </view>
 
       <view class="mb-[24rpx] border border-[#eeeeee] rounded-[20rpx] bg-[#fbfbfb] p-[24rpx]" style="box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);">
         <view class="flex cursor-pointer items-center justify-between border border-[#eeeeee] rounded-[12rpx] bg-[#f5f7fb] p-[20rpx] transition-all duration-300 active:border-[#336cff] active:bg-[#eef3ff]" @click="showConfigTypeSelector">
           <text class="text-[28rpx] text-[#232338] font-medium">
-              {{ t('deviceConfig.configMethod') }}
-            </text>
-            <text class="mx-[16rpx] flex-1 text-right text-[26rpx] text-[#65686f]">
-              {{ configType === 'wifi' ? t('deviceConfig.wifiConfig') : t('deviceConfig.ultrasonicConfig') }}
-            </text>
+            配网方式
+          </text>
+          <text class="mx-[16rpx] flex-1 text-right text-[26rpx] text-[#65686f]">
+            {{ configType === 'wifi' ? 'WiFi配网' : '超声波配网' }}
+          </text>
           <wd-icon name="arrow-right" custom-class="text-[20rpx] text-[#9d9ea3]" />
         </view>
       </view>
@@ -105,8 +96,8 @@ onMounted(() => {
       <!-- WiFi网络选择 -->
       <view class="pb-[20rpx]">
         <text class="text-[32rpx] text-[#232338] font-bold">
-            {{ t('deviceConfig.networkConfig') }}
-          </text>
+          网络配置
+        </text>
       </view>
 
       <view class="mb-[24rpx] border border-[#eeeeee] rounded-[20rpx] bg-[#fbfbfb] p-[24rpx]" style="box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);">
@@ -148,7 +139,7 @@ onMounted(() => {
 <route lang="jsonc" type="page">
 {
   "style": {
-    "navigationBarTitleText": "设备配置",
+    "navigationBarTitleText": "设备配网",
     "navigationStyle": "custom"
   }
 }

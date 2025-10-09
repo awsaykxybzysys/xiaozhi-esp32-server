@@ -125,8 +125,7 @@ def fetch_news_from_api(conn, source="thepaper"):
         ]["get_news_from_newsnow"].get("url"):
             api_url = conn.config["plugins"]["get_news_from_newsnow"]["url"] + source
 
-        headers = {"User-Agent": "Mozilla/5.0"}
-        response = requests.get(api_url, headers=headers, timeout=10)
+        response = requests.get(api_url, timeout=10)
         response.raise_for_status()
 
         data = response.json()
@@ -145,8 +144,7 @@ def fetch_news_from_api(conn, source="thepaper"):
 def fetch_news_detail(url):
     """获取新闻详情页内容并使用MarkItDown清理HTML"""
     try:
-        headers = {"User-Agent": "Mozilla/5.0"}
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, timeout=10)
         response.raise_for_status()
 
         # 使用MarkItDown清理HTML内容

@@ -10,10 +10,11 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
+import org.apache.catalina.connector.ClientAbortException;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import xiaozhi.common.utils.MessageUtils;
 import xiaozhi.common.utils.Result;
 
 /**
@@ -63,7 +64,7 @@ public class RenExceptionHandler {
     @ExceptionHandler(NoResourceFoundException.class)
     public Result<Void> handleNoResourceFoundException(NoResourceFoundException ex) {
         log.warn("Resource not found: {}", ex.getMessage());
-        return new Result<Void>().error(404, MessageUtils.getMessage(ErrorCode.RESOURCE_NOT_FOUND));
+        return new Result<Void>().error(404, "资源不存在");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -77,9 +78,35 @@ public class RenExceptionHandler {
                 })
                 .filter(Objects::nonNull)
                 .findFirst()
-                .orElse(MessageUtils.getMessage(ErrorCode.PARAM_VALUE_NULL));
+                .orElse("请求参数错误！");
 
         return new Result<Void>().error(ErrorCode.PARAM_VALUE_NULL, errorMsg);
+    }
+
+    /**
+     * 处理客户端断开连接异常（断开的管道）
+     * 针对文件下载等场景中客户端提前断开连接的情况
+     */
+    @ExceptionHandler({ClientAbortException.class, AsyncRequestNotUsableException.class})
+    public void handleClientAbortException(Exception ex) {
+        // 客户端断开连接，不需要返回响应，只记录警告日志
+        log.warn("客户端断开连接: {}", ex.getMessage());
+        // 不返回任何内容，避免再次尝试写入已断开的连接
+    }
+
+    /**
+     * 处理IO异常（包括断开的管道）
+     * 智能识别断开的管道异常，避免产生二次异常
+     */
+    @ExceptionHandler(java.io.IOException.class)
+    public void handleIOException(java.io.IOException ex) {
+        // 检查是否是断开的管道异常
+        if (ex.getMessage() != null && ex.getMessage().contains("断开的管道")) {
+            log.warn("客户端断开连接: {}", ex.getMessage());
+            // 不返回任何内容，避免二次异常
+        } else {
+            log.error("IO异常: {}", ex.getMessage(), ex);
+        }
     }
 
 }

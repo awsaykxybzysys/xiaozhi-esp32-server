@@ -55,14 +55,29 @@ class WakeupWordsConfig:
             return self._config_cache
 
         try:
-            with open(self.config_file, "a+", encoding="utf-8") as f:
-                with FileLock(f, timeout=self._lock_timeout):
-                    f.seek(0)
-                    content = f.read()
-                    config = yaml.safe_load(content) if content else {}
-                    self._config_cache = config
-                    self._last_load_time = current_time
-                    return config
+            # 首先尝试用UTF-8编码读取
+            try:
+                with open(self.config_file, "a+", encoding="utf-8") as f:
+                    with FileLock(f, timeout=self._lock_timeout):
+                        f.seek(0)
+                        content = f.read()
+                        config = yaml.safe_load(content) if content else {}
+                        self._config_cache = config
+                        self._last_load_time = current_time
+                        return config
+            except UnicodeDecodeError:
+                # 如果UTF-8读取失败，尝试用GBK编码读取（兼容旧文件）
+                with open(self.config_file, "a+", encoding="gbk") as f:
+                    with FileLock(f, timeout=self._lock_timeout):
+                        f.seek(0)
+                        content = f.read()
+                        config = yaml.safe_load(content) if content else {}
+                        self._config_cache = config
+                        self._last_load_time = current_time
+                        # 如果成功用GBK读取，立即用UTF-8重新保存以转换编码
+                        if config:
+                            self._save_config(config)
+                        return config
         except (TimeoutError, IOError) as e:
             print(f"加载配置文件失败: {e}")
             return {}

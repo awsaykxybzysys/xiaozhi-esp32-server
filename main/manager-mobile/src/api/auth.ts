@@ -4,6 +4,7 @@ import { http } from '@/http/request/alova'
 export interface LoginData {
   username: string
   password: string
+  captcha: string
   captchaId: string
   areaCode?: string
   mobile?: string
@@ -67,7 +68,6 @@ export interface PublicConfig {
   beianIcpNum: string
   beianGaNum: string
   name: string
-  sm2PublicKey: string
 }
 
 // 获取用户信息
@@ -94,6 +94,8 @@ export function getPublicConfig() {
 export interface RegisterData {
   username: string
   password: string
+  confirmPassword: string
+  captcha: string
   captchaId: string
   areaCode: string
   mobile: string
