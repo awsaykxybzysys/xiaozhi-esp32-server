@@ -127,14 +127,18 @@ class ServerPluginExecutor(ToolExecutor):
                 
                 # 从源头解决问题：在company_policy_query.py中过滤完整响应，这里不再需要重复检测
                 
-                # 立即播放当前数据片段的语音
-                if hasattr(conn, 'tts') and hasattr(conn.tts, 'tts_one_sentence'):
-                    from core.providers.tts.dto.dto import ContentType
-                    conn.tts.tts_one_sentence(conn, ContentType.TEXT, content_detail=content_data)
-                elif hasattr(conn, 'tts') and hasattr(conn.tts, 'tts_text_queue'):
-                    # 使用队列方式播放
+                # 播放流式数据语音
+                if hasattr(conn, 'tts') and hasattr(conn.tts, 'tts_text_queue'):
+                    # 使用队列方式播放，需要包装成TTSMessageDTO
+                    from core.providers.tts.dto.dto import TTSMessageDTO, ContentType, SentenceType
                     self.logger.info(f"通过队列播放流式数据语音: {content_data}")
-                    conn.tts.tts_text_queue.put(content_data)
+                    message = TTSMessageDTO(
+                        sentence_id=conn.sentence_id or "stream_message",
+                        sentence_type=SentenceType.MIDDLE,
+                        content_type=ContentType.TEXT,
+                        content_detail=content_data
+                    )
+                    conn.tts.tts_text_queue.put(message)
                 else:
                     self.logger.warning("连接对象没有可用的TTS播放方法")
                 # 只发送数据，不直接播放TTS，让系统自动处理

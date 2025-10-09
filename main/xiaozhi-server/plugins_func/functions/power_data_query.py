@@ -73,6 +73,7 @@ async def power_data_query(conn, data_type: str, query: str, timeout: int = 60, 
         
         logger.bind(tag=TAG).info(f"开始查询电力数据: {data_type} - {query}, API: {api_url}")
         
+        
         # 构建请求参数
         params = {
             "qa": query
@@ -98,6 +99,7 @@ async def power_data_query(conn, data_type: str, query: str, timeout: int = 60, 
                     error_msg = f"电力数据API请求失败，状态码: {response.status}, 响应: {error_text}"
                     logger.bind(tag=TAG).error(error_msg)
                     return ActionResponse(Action.ERROR, response=error_msg)
+                
                 
                 # 流式读取数据 - 优化版本，减少卡顿
                 chunk_count = 0
@@ -292,7 +294,7 @@ async def power_data_query(conn, data_type: str, query: str, timeout: int = 60, 
                 logger.bind(tag=TAG).info(f"流式查询完成，共处理 {content_chunk_count} 个内容块")
                 return ActionResponse(
                     Action.STREAM_RESPONSE, 
-                    result=f"关于{query}数据的查询已完成。"
+                    result=f"。{query}查询任务已执行完成。"
                 )
                 
     except asyncio.TimeoutError:
