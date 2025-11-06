@@ -67,6 +67,8 @@ async def handleTextMessage(conn, message):
                         # 上报纯文字数据（复用ASR上报功能，但不提供音频数据）
                         enqueue_asr_report(conn, "嘿，你好呀", [])
                         await startToChat(conn, "嘿，你好呀")
+                        # 处理完成后重置唤醒状态
+                        conn.just_woken_up = False
                     else:
                         # 上报纯文字数据（复用ASR上报功能，但不提供音频数据）
                         enqueue_asr_report(conn, original_text, [])

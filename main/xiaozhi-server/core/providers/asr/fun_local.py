@@ -61,6 +61,16 @@ class ASRProvider(ASRProviderBase):
                 # device="cuda:0",  # 启用GPU加速
             )
 
+    def clear_audio_cache(self):
+        """清理FunASR的内部音频缓存"""
+        # FunASR模型可能有内部缓存，这里可以添加清理逻辑
+        # 目前FunASR的AutoModel没有明显的缓存清理方法，但可以重置模型状态
+        if hasattr(self.model, 'reset'):
+            try:
+                self.model.reset()
+            except Exception as e:
+                logger.bind(tag=TAG).warning(f"清理FunASR缓存失败: {e}")
+
     async def speech_to_text(
         self, opus_data: List[bytes], session_id: str, audio_format="opus"
     ) -> Tuple[Optional[str], Optional[str]]:

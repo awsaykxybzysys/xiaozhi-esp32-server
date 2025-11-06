@@ -221,6 +221,11 @@ class ASRProviderBase(ABC):
     def stop_ws_connection(self):
         pass
 
+    def clear_audio_cache(self):
+        """清理ASR提供者的内部音频缓存"""
+        # 默认实现为空，子类可以重写此方法
+        pass
+
     def save_audio_to_file(self, pcm_data: List[bytes], session_id: str) -> str:
         """PCM数据保存为WAV文件"""
         module_name = __name__.split(".")[-1]

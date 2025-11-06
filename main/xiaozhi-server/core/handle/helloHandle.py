@@ -89,6 +89,9 @@ async def checkWakeupWords(conn, text):
     await sendAudioMessage(conn, SentenceType.FIRST, opus_packets, response.get("text"))
     await sendAudioMessage(conn, SentenceType.LAST, [], None)
 
+    # TTS播放完成后，重置唤醒状态
+    conn.just_woken_up = False
+
     # 补充对话
     conn.dialogue.put(Message(role="assistant", content=response.get("text")))
 

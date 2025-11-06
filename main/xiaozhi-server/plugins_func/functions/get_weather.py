@@ -12,7 +12,7 @@ GET_WEATHER_FUNCTION_DESC = {
     "function": {
         "name": "get_weather",
         "description": (
-            "获取某个地点的实时天气信息，用户应提供一个位置，比如用户说西安天气，参数为：西安。"
+            "获取某个地点的实时天气信息，用户应提供一个位置，比如用户说深圳天气，参数为：深圳。"
             "如果用户说的是省份，默认用省会城市。如果用户说的不是省份或城市而是一个地名，默认用该地所在省份的省会城市。"
             "如果用户没有指明地点，说‘天气怎么样’，‘今天天气如何’，location参数为空"
         ),
@@ -21,7 +21,7 @@ GET_WEATHER_FUNCTION_DESC = {
             "properties": {
                 "location": {
                     "type": "string",
-                    "description": "地点名，例如西安。可选参数，如果不提供则不传",
+                    "description": "地点名，例如深圳。可选参数，如果不提供则不传",
                 },
                 "lang": {
                     "type": "string",
